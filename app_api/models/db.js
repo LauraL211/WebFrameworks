@@ -1,44 +1,17 @@
 const mongoose = require('mongoose');
-let dbURI = 'mongodb://localhost/Loc8r';
-if (process.env.NODE_ENV === 'production') {
-  dbURI = process.env.MONGODB_URI;
+const dbURI = "mongodb+srv://lollylooney:Gads1858@cluster0.2sjgu.mongodb.net/Loc8r?retryWrites=true&w=majority&appName=Cluster0";
+
+try {
+   
+mongoose.connect(
+    dbURI,
+    { useNewUrlParser: true, useUnifiedTopology: true }).then(
+    () => {console.log(" Mongoose is connected")},
+	err=> {console.log(err)}
+	);
 }
-mongoose.connect(dbURI);
-
-mongoose.connection.on('connected', () => {
-  console.log(`Mongoose connected to ${dbURI}`);
-});
-mongoose.connection.on('error', err => {
-  console.log('Mongoose connection error:', err);
-});
-mongoose.connection.on('disconnected', () => {
-  console.log('Mongoose disconnected');
-});
-
-const gracefulShutdown = (msg, callback) => {
-  mongoose.connection.close( () => {
-    console.log(`Mongoose disconnected through ${msg}`);
-    callback();
-  });
-};
-
-// For nodemon restarts                                 
-process.once('SIGUSR2', () => {
-  gracefulShutdown('nodemon restart', () => {
-    process.kill(process.pid, 'SIGUSR2');
-  });
-});
-// For app termination
-process.on('SIGINT', () => {
-  gracefulShutdown('app termination', () => {
-    process.exit(0);
-  });
-});
-// For Heroku app termination
-process.on('SIGTERM', () => {
-  gracefulShutdown('Heroku app shutdown', () => {
-    process.exit(0);
-  });
-});
-
+ catch (e) {
+  console.log("could not connect");
+ }
 require('./locations');
+

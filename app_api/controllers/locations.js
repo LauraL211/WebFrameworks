@@ -1,16 +1,24 @@
 const mongoose = require('mongoose');
+const request = require('request');
+const apiOptions = { 
+server : 'http://localhost:3000' 
+}; 
+if (process.env.NODE_ENV === 'production') { 
+apiOptions.server = 'https://pure-temple-67771.render.com'; 
+}
+
 const Loc = mongoose.model('Location');
 
-const _buildLocationList = function(req, res, results, stats) {
+const _buildLocationList = function(req, res, results) {
   let locations = [];
   results.forEach((doc) => {
     locations.push({
-      distance: doc.dis,
-      name: doc.obj.name,
-      address: doc.obj.address,
-      rating: doc.obj.rating,
-      facilities: doc.obj.facilities,
-      _id: doc.obj._id
+      distance: doc.dist,
+      name: doc.name,
+      address: doc.address,
+      rating: doc.rating,
+      facilities: doc.facilities,
+      _id: doc._id
     });
   });
   return locations;
@@ -38,17 +46,29 @@ const locationsListByDistance = function (req, res) {
       });
     return;
   }
-  Loc.geoNear(point, geoOptions, (err, results, stats) => {
-    const locations = _buildLocationList(req, res, results, stats);
-    console.log('Geo Results', results);
-    console.log('Geo stats', stats);
-    res
-      .status(200)
-      .json(locations);
-  });
+  Loc.aggregate(
+  [
+	{	
+		'$geoNear': {
+                    'near': point,
+                    'spherical': true,
+                    'distanceField': 'dist',
+                    'maxDistance': 20000
+                }
+            }
+        ]).then((results, err)=>{
+			console.log(results);
+			const locations = _buildLocationList(req, res, results);
+			console.log('Geo Results', results);
+			res
+			.status(200)
+			.json(locations);
+			});
+
 };
 
 const locationsCreate = function (req, res) {
+	console.log(req.body.coords);
   Loc.create({
     name: req.body.name,
     address: req.body.address,
@@ -65,7 +85,7 @@ const locationsCreate = function (req, res) {
       closing: req.body.closing2,
       closed: req.body.closed2,
     }]
-  }, (err, location) => {
+  }).then((location, err) => {
     if (err) {
       res
         .status(400)
@@ -82,7 +102,7 @@ const locationsReadOne = function (req, res) {
   if (req.params && req.params.locationid) {
     Loc
       .findById(req.params.locationid)
-      .exec((err, location) => {
+      .then((location, err) => {
         if (!location) {
           res	
             .status(404) 
@@ -121,7 +141,7 @@ const locationsUpdateOne = function (req, res) {
   Loc
     .findById(req.params.locationid)
     .select('-reviews -rating')
-    .exec((err, location) => {
+    .then((location, err) => {
       if (!location) {
         res
           .json(404)
@@ -173,7 +193,7 @@ const locationsDeleteOne = function (req, res) {
   if (locationid) {
     Loc
       .findByIdAndRemove(locationid) 
-      .exec((err, location) => {
+      .then((location, err) => {
           if (err) {
             res
               .status(404)
@@ -194,10 +214,35 @@ const locationsDeleteOne = function (req, res) {
   }
 };
 
+const locationsReadAll = function (req, res) {
+  
+  Loc
+    .find()
+    .then((location, err) => {
+      if (!location) {
+        res	
+          .status(404) 
+          .json({	
+            "message": "locationid not found"
+          });	 
+        return;
+      } else if (err) {
+        res	
+          .status(404) 
+          .json(err); 
+        return; 	
+      }
+      res		
+        .status(200)
+        .json(location);
+    });
+};
+
 module.exports = {
-  locationsListByDistance,
-  locationsCreate,
-  locationsReadOne,
-  locationsUpdateOne,
-  locationsDeleteOne
+locationsListByDistance,
+locationsCreate,
+locationsReadOne,
+locationsUpdateOne,
+locationsDeleteOne,
+locationsReadAll
 };

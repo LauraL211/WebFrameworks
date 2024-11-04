@@ -1,33 +1,46 @@
+const request = require('request');
+const apiOptions = { 
+server : 'http://localhost:3000' 
+}; 
+if (process.env.NODE_ENV === 'production') { 
+apiOptions.server = ' https://wsrender.onrender.com' 
+}
+
+
 /* GET 'home' page */
-const homelist = function(req, res){
+const _renderHomepage = function(req, res, responseBody){ 
   res.render('locations-list', {
-    title: 'Loc8r - find a place to work with wifi',
-    pageHeader: {
-      title: 'Loc8r',
-      strapline: 'Find places to work with wifi near you!'
-    },
-    sidebar: "Looking for wifi and a seat? Loc8r helps you find places to work when out and about. Perhaps with coffee, cake or a pint? Let Loc8r help you find the place you're looking for.",
-    locations: [{
-        name: 'Starcups',
-        address: '125 High Street, Reading, RG6 1PS',
-        rating: 3,
-        facilities: ['Hot drinks', 'Food', 'Premium wifi'],
-        distance: '100m'
-    }, {
-        name: 'Cafe Hero',
-        address: '125 High Street, Reading, RG6 1PS',
-        rating: 4,
-        facilities: ['Hot drinks', 'Food', 'Premium wifi'],
-        distance: '200m'
-    }, {
-        name: 'Burger Queen',
-        address: '125 High Street, Reading, RG6 1PS',
-        rating: 2,
-        facilities: ['Food', 'Premium wifi'],
-        distance: '250m'
-    }]
+  title: 'Loc8r - find a place to work with wifi',
+  pageHeader: {
+  title: 'Loc8r',
+  strapline: 'Find places to work with wifi near you!'
+  },
+  sidebar: "Looking for wifi and a seat? Loc8r helps you find places to work when out and about. Perhaps with coffee, cake or a pint? Let Loc8r help you find the place you're looking for.",
+  locations: responseBody 
   });
-};
+  };
+  
+
+const homelist = function(req, res)
+  {
+    const path = '/api/locations'; 
+    const requestOptions = { 
+      url : apiOptions.server + path, 
+      method : 'GET', 
+      json : {}, 
+      qs : { 
+        lng : -0.9690884, 
+        lat : 51.455041, 
+        maxDistance : 20 
+      } 
+    }; 
+    request(requestOptions, (err, response, body) => { 
+    _renderHomepage(req, res, body); 
+    } 
+    );
+  };
+  
+  
 
 /* GET 'Location info' page */
 const locationInfo = function(req, res){
